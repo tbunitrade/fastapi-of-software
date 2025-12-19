@@ -5,7 +5,7 @@ from app.core.config import settings
 
 engine = create_engine(settings.DATABASE_URI, pool_pre_ping=True)
 
-
+print("ensure_constraints: creating unique indexes...")
 def ensure_constraints() -> None:
     with engine.begin() as conn:
         # 1) operator_account_access: (operator_id, of_account_id) UNIQUE
