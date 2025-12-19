@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT:  int = 5432
     POSTGRES_USER:  str = "postgres"
     POSTGRES_PASSWORD:  str = "postgres"
-    POSTGRES_DB:    str = "of_compaings"
+    POSTGRES_DB:    str = "of_campaings"
 
     # Auth (если шаблон уже даёт JWT — просто свяжешь)
     SECRET_KEY: str = Field(default="change-me", description="JWT/crypto secret")
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     def DATABASE_URI(self) -> str:
         return (
             f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
-            f"@self{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+            f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
 settings = Settings()
