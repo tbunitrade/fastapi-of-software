@@ -1,5 +1,6 @@
 # backend/app/db/session.py
 from sqlmodel import SQLModel, create_engine, Session
+from sqlalchemy import text
 from app.core.config import settings
 
 engine = create_engine(settings.DATABASE_URI, pool_pre_ping=True)
@@ -17,6 +18,14 @@ def init_db() -> None:
 
 
     SQLModel.metadata.create_all(engine)
+
+    # Уникальность пары (operator_id, of_account_id)
+    # Идемпотентно и безопасно для повторных запусков
+    with engine.begin() as conn:
+        conn.execute(text("""
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_operator_account_access_operator_of
+            ON operator_account_access (operator_id, of_account_id);
+        """))
 
 
 def get_session():
