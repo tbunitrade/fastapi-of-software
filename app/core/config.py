@@ -1,9 +1,12 @@
 # backend/app/core/config.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[2]  # .../app/core/config.py -> .../ (root)
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env" , env_ignore_empty=True, extra="ignore")
+    model_config = SettingsConfigDict(env_file=str(BASE_DIR / ".env"), env_ignore_empty=True, extra="ignore")
 
     PROJECT_NAME: str = "OF API V1 Campaing Manager"
     API_V1_STR: str = "/api/v1"
@@ -28,6 +31,17 @@ class Settings(BaseSettings):
     #Limits thresholds (v1)
     RATE_LIMIT_MINUTE_LOW: int = 50
     RATE_LIMIT_DAY_LOW: int = 500
+
+    # External API (all from .env)
+    PROVIDER_BASE_URL: str = "https://api.provider.example"
+    PROVIDER_TIMEOUT_SECONDS: int = 25
+    PROVIDER_API_KEY_HEADER: str = "Authorization"
+    PROVIDER_API_KEY_PREFIX: str = "Bearer"
+
+    # Secrets (do NOT hardcode; keep in .env)
+    PROVIDER_API_KEY: str = Field(default="", repr=False)
+    PROVIDER_CLIENT_ID: str = Field(default="", repr=False)
+    PROVIDER_CLIENT_SECRET: str = Field(default="", repr=False)
 
     @property
     def DATABASE_URI(self) -> str:

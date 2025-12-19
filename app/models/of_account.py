@@ -1,5 +1,4 @@
 # backend/app/models/of_account.py
-from operator import index
 from typing import Optional
 from sqlmodel import SQLModel, Field
 from app.models.base import TimestampMixin
@@ -13,4 +12,3 @@ class OFAccount(TimestampMixin, SQLModel, table=True):
     api_key_encrypted: str = Field(nullable=False)
     is_active: bool = Field(default=True, nullable=False)
 
-    
