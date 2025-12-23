@@ -1,19 +1,20 @@
 # backend/app/api/v1/routes/admin_accounts.py
+from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
-from app.api.deps import get_current_admin_user
+from fastapi import APIRouter, Depends
+from sqlmodel import Session, select
+
+from app.api.deps import get_current_active_user
+from app.db.session import get_session
 from app.models.user import User
+from app.models.of_account import OFAccount
 
 router = APIRouter()
 
 @router.get("")
-def list_accounts(_: User = Depends(get_current_admin_user)):
-    return {"todo": "list of_accounts"}
-
-@router.post("", status_code=status.HTTP_201_CREATED)
-def create_account(_: User = Depends(get_current_admin_user)):
-    return {"todo": "create of_account"}
-
-@router.patch("/{id}")
-def update_account(id: int, _: User = Depends(get_current_admin_user)):
-    return {"todo": "update of_account", "id": id}
+def list_accounts(
+        _: User = Depends(get_current_active_user),
+        session: Session = Depends(get_session),
+):
+    items = session.exec(select(OFAccount).order_by(OFAccount.id.desc())).all()
+    return {"items": [i.model_dump() for i in items]}

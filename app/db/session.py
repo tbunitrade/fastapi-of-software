@@ -20,6 +20,12 @@ def ensure_constraints() -> None:
                               WHERE provider_queue_id IS NOT NULL;
                           """))
 
+        # 5) нужно для endpoints
+        conn.execute(text("""
+                          CREATE UNIQUE INDEX IF NOT EXISTS ux_audience_list_members_list_user
+                              ON audience_list_members (audience_list_id, provider_user_id);
+                          """))
+
 def init_db() -> None:
     # import models to register in metadata
     from app.models.user import User
@@ -27,6 +33,8 @@ def init_db() -> None:
     from app.models.operator_access import OperatorAccountAccess
     from app.models.campaign import Campaign
     from app.models.campaign_run import CampaignRun
+    from app.models.audience_list import AudienceList
+    from app.models.audience_list_member import AudienceListMember
 
     SQLModel.metadata.create_all(engine)
     ensure_constraints()

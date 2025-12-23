@@ -9,6 +9,8 @@ from app.api.v1.routes.of_accounts import router as of_accounts_router
 from app.api.v1.routes.campaigns import router as campaigns_router
 from app.api.v1.routes.runs import router as runs_router
 from app.api.v1.routes.provider_proxy import router as provider_router
+from app.api.v1.routes.audiences import router as audiences_router
+from app.api.v1.routes.admin_ui import router as admin_ui_router
 
 api_router = APIRouter(prefix=settings.API_V1_STR)
 
@@ -20,3 +22,5 @@ api_router.include_router(of_accounts_router, prefix="/of-accounts", tags=["acco
 api_router.include_router(campaigns_router, prefix="/campaigns", tags=["campaigns"])
 api_router.include_router(runs_router, prefix="/runs", tags=["runs"])
 api_router.include_router(provider_router, prefix="/provider", tags=["provider"])
+api_router.include_router(audiences_router, prefix="/audiences", tags=["audiences"])
+api_router.include_router(admin_ui_router, prefix="/ui", tags=["ui"])

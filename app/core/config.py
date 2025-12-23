@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     PROVIDER_CLIENT_ID: str = Field(default="", repr=False)
     PROVIDER_CLIENT_SECRET: str = Field(default="", repr=False)
 
+    # Финализация /provider/{account_id}/send под новый DTO
+    PROVIDER_SEND_PATH_TEMPLATE: str = "/api/{account}/mass-messaging"
+    PROVIDER_OVERVIEW_PATH_TEMPLATE: str = "/api/{account}/mass-messaging/overview"
+
     @property
     def DATABASE_URI(self) -> str:
         return (
