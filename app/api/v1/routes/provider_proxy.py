@@ -22,6 +22,7 @@ BUILTIN_USERLIST_MAP = {
     "recent": "recent",
 }
 
+
 def _normalize_user_ids(raw) -> list[int]:
     out: list[int] = []
     for x in (raw or []):
@@ -39,10 +40,12 @@ def _normalize_user_ids(raw) -> list[int]:
             continue
         seen.add(v)
         uniq.append(v)
+
     return uniq
 
+
 def _ids_to_strings(ids: list[int]) -> list[str]:
-    # “канонично” по доке array<string>
+    # “канонично” по доке: array<string>
     return [str(x) for x in ids]
 
 
@@ -61,6 +64,7 @@ async def send_message(
         if not payload["text"]:
             raise HTTPException(status_code=422, detail="text is empty")
 
+        # 1) builtin lists -> userLists
         if body.audience.type in (
                 AudienceType.fans,
                 AudienceType.following,
@@ -68,26 +72,33 @@ async def send_message(
                 AudienceType.recent,
         ):
             payload["userLists"] = [BUILTIN_USERLIST_MAP[body.audience.type.value]]
+
+            # период (провайдер может игнорить — но по доке params есть)
             if body.audience.type == AudienceType.recent:
                 if body.audience.start_date:
                     payload["startDate"] = body.audience.start_date
                 if body.audience.end_date:
                     payload["endDate"] = body.audience.end_date
 
+        # 2) custom list -> load userIds from DB
         elif body.audience.type == AudienceType.custom:
             stmt = select(AudienceListMember.provider_user_id).where(
                 AudienceListMember.audience_list_id == body.audience.custom_list_id
             )
             ids = session.exec(stmt).all()
+
             user_ids = _normalize_user_ids(ids)
             if not user_ids:
                 raise HTTPException(status_code=400, detail="Custom list is empty")
+
             payload["userIds"] = _ids_to_strings(user_ids)
 
+        # 3) direct -> userIds from request
         elif body.audience.type == AudienceType.direct:
             user_ids = _normalize_user_ids(body.audience.user_ids or [])
             if not user_ids:
                 raise HTTPException(status_code=422, detail="user_ids is empty after normalization")
+
             payload["userIds"] = _ids_to_strings(user_ids)
 
         else:
@@ -137,6 +148,7 @@ async def overview(
         await client.aclose()
 
 
+# C) Queue list (pending/recent): GET /api/{account}/mass-messaging
 @router.get("/{account_id}/queue")
 async def list_queue(
         account_id: str,
@@ -152,6 +164,7 @@ async def list_queue(
         await client.aclose()
 
 
+# Get content of a mass message: GET /api/{account}/mass-messaging/{id}
 @router.get("/{account_id}/queue/{queue_id}")
 async def get_queue_item(
         account_id: str,
