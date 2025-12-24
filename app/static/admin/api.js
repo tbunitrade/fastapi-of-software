@@ -14,11 +14,13 @@ export async function apiFetch(path, opts = {}) {
 
     const txt = await res.text();
     let data = null;
-    try { data = JSON.parse(txt); } catch (e) { data = txt; }
+    try { data = JSON.parse(txt); } catch (_) { data = txt; }
 
     if (!res.ok) {
-        // пробрасываем payload как строку (для delete-flow)
-        throw new Error(typeof data === "string" ? data : JSON.stringify(data));
+        const err = new Error("API_ERROR");
+        err.status = res.status;
+        err.data = data;
+        throw err;
     }
     return data;
 }
@@ -46,7 +48,7 @@ export function resolveProviderAccount(selectedAccount) {
     const fromDb = (selectedAccount && selectedAccount.account_code) ? selectedAccount.account_code.trim() : "";
     if (fromDb) return fromDb;
 
-    const fallback = val("providerAccountId").trim();
+    const fallback = (document.getElementById("providerAccountId")?.value || "").trim();
     if (fallback) return fallback;
 
     return (window.__DEFAULT_PROVIDER_ACCT__ || "").trim();
