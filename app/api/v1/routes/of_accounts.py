@@ -11,9 +11,17 @@ from app.api.deps import get_current_active_user
 from app.db.session import get_session
 from app.models.user import User
 from app.models.of_account import OFAccount
+from app.core.crypto import encrypt_api_key
 
 router = APIRouter()
 
+def _public_acc(a: OFAccount) -> dict:
+    return {
+        "id": a.id,
+        "name": a.name,
+        "account_code": a.account_code,
+        "is_active": a.is_active,
+    }
 
 @router.get("")
 def list_available_accounts(
@@ -21,12 +29,13 @@ def list_available_accounts(
         session: Session = Depends(get_session),
 ):
     items = session.exec(select(OFAccount).order_by(OFAccount.id.desc())).all()
-    return {"items": [i.model_dump() for i in items]}
+    return {"items": [_public_acc(i) for i in items]}
 
 
 class CreateOFAccountRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     account_code: str = Field(min_length=1, max_length=200)  # acct_...
+    api_key: str = Field(min_length=5, max_length=5000)       # <-- NEW
     is_active: bool = True
 
 
@@ -39,17 +48,69 @@ def create_account(
     acc = OFAccount(
         name=body.name.strip(),
         account_code=body.account_code.strip(),
+        api_key_encrypted=encrypt_api_key(body.api_key),  # <-- NEW
         is_active=body.is_active,
     )
     session.add(acc)
     try:
         session.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         session.rollback()
-        raise HTTPException(status_code=409, detail="account_code already exists")
-
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": "create_account failed",
+                "orig": str(getattr(e, "orig", e)),
+            },
+        )
     session.refresh(acc)
-    return {"ok": True, "item": acc.model_dump()}
+    return {"ok": True, "item": _public_acc(acc)}
+
+
+# @router.get("")
+# def list_available_accounts(
+#         _: User = Depends(get_current_active_user),
+#         session: Session = Depends(get_session),
+# ):
+#     items = session.exec(select(OFAccount).order_by(OFAccount.id.desc())).all()
+#     return {"items": [i.model_dump() for i in items]}
+#
+#
+# class CreateOFAccountRequest(BaseModel):
+#     name: str = Field(min_length=1, max_length=200)
+#     account_code: str = Field(min_length=1, max_length=200)  # acct_...
+#     is_active: bool = True
+#
+#
+# @router.post("")
+# def create_account(
+#         body: CreateOFAccountRequest,
+#         _: User = Depends(get_current_active_user),
+#         session: Session = Depends(get_session),
+# ):
+#     acc = OFAccount(
+#         name=body.name.strip(),
+#         account_code=body.account_code.strip(),
+#         is_active=body.is_active,
+#     )
+#     session.add(acc)
+#     try:
+#         session.commit()
+#     # except IntegrityError:
+#     #     session.rollback()
+#     #     raise HTTPException(status_code=409, detail="account_code already exists")
+#
+#     except IntegrityError as e:
+#         session.rollback()
+#         raise HTTPException(
+#             status_code=409,
+#             detail={
+#                 "message": "create_account failed",
+#                 "orig": str(getattr(e, "orig", e)),
+#             },
+#         )
+#     session.refresh(acc)
+#     return {"ok": True, "item": acc.model_dump()}
 
 
 def _dependency_counts(session: Session, account_id: int) -> dict:
