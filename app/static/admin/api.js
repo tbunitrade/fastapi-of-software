@@ -1,0 +1,53 @@
+// frontend/app/static/admin/api.js
+export const API = "/api/v1";
+
+export function $(id) { return document.getElementById(id); }
+export function val(id) { return $(id).value; }
+export function setText(id, text) { $(id).textContent = text; }
+export function setHtml(id, html) { $(id).innerHTML = html; }
+
+export async function apiFetch(path, opts = {}) {
+    const res = await fetch(API + path, {
+        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+        ...opts
+    });
+
+    const txt = await res.text();
+    let data = null;
+    try { data = JSON.parse(txt); } catch (e) { data = txt; }
+
+    if (!res.ok) {
+        // пробрасываем payload как строку (для delete-flow)
+        throw new Error(typeof data === "string" ? data : JSON.stringify(data));
+    }
+    return data;
+}
+
+export function parseIds(text) {
+    return (text || "")
+        .split(/[^0-9]+/g)
+        .map(x => x.trim())
+        .filter(Boolean)
+        .map(x => parseInt(x, 10))
+        .filter(n => Number.isFinite(n) && n > 0);
+}
+
+export function getSelectedAccounts() {
+    const sel = $("accountsSelect");
+    return Array.from(sel.selectedOptions).map(o => ({
+        id: parseInt(o.value, 10),
+        account_code: o.dataset.acct || "",
+        name: o.dataset.name || "",
+        label: o.textContent || ""
+    }));
+}
+
+export function resolveProviderAccount(selectedAccount) {
+    const fromDb = (selectedAccount && selectedAccount.account_code) ? selectedAccount.account_code.trim() : "";
+    if (fromDb) return fromDb;
+
+    const fallback = val("providerAccountId").trim();
+    if (fallback) return fallback;
+
+    return (window.__DEFAULT_PROVIDER_ACCT__ || "").trim();
+}
