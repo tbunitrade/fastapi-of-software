@@ -1,26 +1,24 @@
 # backend/app/api/v1/routes/admin_ui.py
 from __future__ import annotations
 
-import html as _html
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from app.core.config import settings
 
 router = APIRouter()
 
-
 @router.get("/admin", response_class=HTMLResponse)
 def admin_ui():
     default_provider_acct = settings.PROVIDER_CLIENT_ID or ""
-    default_provider_acct = _html.escape(default_provider_acct, quote=True)
 
-    html = f"""<!doctype html>
+    html = r"""
+<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>API Admin UI</title>
-  <link rel="stylesheet" href="/static/admin/admin.css">
+  <link rel="stylesheet" href="/static/admin/admin.css" />
 </head>
 <body>
   <h2>Admin UI (HTML+JS)</h2>
@@ -37,6 +35,7 @@ def admin_ui():
   <!-- PAGE: ACCOUNTS -->
   <div id="pageAccounts" class="page card active">
     <h3>Accounts</h3>
+
     <div class="row">
       <div style="min-width:420px;">
         <label>Accounts in DB (multi-select)</label>
@@ -47,7 +46,7 @@ def admin_ui():
       <div><button onclick="deleteSelectedAccounts()">Delete Selected</button></div>
     </div>
 
-    <hr class="hr" />
+    <hr class="sep" />
 
     <h4>Create account</h4>
     <div class="row">
@@ -86,7 +85,7 @@ def admin_ui():
       <div id="audiencesStatus" class="muted"></div>
     </div>
 
-    <hr class="hr" />
+    <hr class="sep" />
 
     <h4>Custom Lists</h4>
 
@@ -109,7 +108,7 @@ def admin_ui():
 
     <div style="margin-top:10px;">
       <label>Add members (provider_user_id). One per line / comma / space.</label>
-      <textarea id="membersInput" placeholder="123&#10;456&#10;789"></textarea>
+      <textarea id="membersInput" placeholder="123\\n456\\n789"></textarea>
       <div class="row" style="margin-top:10px;">
         <button onclick="addMembers()">Add</button>
       </div>
@@ -128,7 +127,7 @@ def admin_ui():
     <div class="row">
       <div>
         <label>Provider account_id (fallback)</label>
-        <input id="providerAccountId" style="width:420px" />
+        <input id="providerAccountId" value="__DEFAULT_PROVIDER_ACCT__" style="width:420px" />
         <div class="muted">Если выбран аккаунт из DB — используем его account_code.</div>
       </div>
       <div style="min-width:320px;">
@@ -168,7 +167,7 @@ def admin_ui():
 
     <div class="mono" id="queueResult" style="margin-top:10px;"></div>
 
-    <hr class="hr" />
+    <hr class="sep" />
 
     <div class="row">
       <div>
@@ -214,10 +213,19 @@ def admin_ui():
   </div>
 
   <script>
-    window.__DEFAULT_PROVIDER_ACCT__ = "{default_provider_acct}";
+    window.__DEFAULT_PROVIDER_ACCT__ = "__DEFAULT_PROVIDER_ACCT__";
   </script>
-  <script type="module" src="/static/admin/admin.js"></script>
+
+  <script src="/static/admin/api.js"></script>
+  <script src="/static/admin/tabs.js"></script>
+  <script src="/static/admin/accounts.js"></script>
+  <script src="/static/admin/audiences.js"></script>
+  <script src="/static/admin/send.js"></script>
+  <script src="/static/admin/queue.js"></script>
+  <script src="/static/admin/overview.js"></script>
+  <script src="/static/admin/admin.js"></script>
 </body>
 </html>
-"""
+""".replace("__DEFAULT_PROVIDER_ACCT__", default_provider_acct)
+
     return HTMLResponse(html)
