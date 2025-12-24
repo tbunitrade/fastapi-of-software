@@ -1,15 +1,27 @@
 # backend/app/api/v1/routes/admin_ui.py
 from __future__ import annotations
 
+import json
+import html as html_lib
+
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
+
 from app.core.config import settings
 
 router = APIRouter()
 
+
 @router.get("/admin", response_class=HTMLResponse)
 def admin_ui():
-    default_provider_acct = settings.PROVIDER_CLIENT_ID or ""
+    default_provider_acct = (settings.PROVIDER_CLIENT_ID or "").strip()
+
+    # 1) безопасно для HTML-атрибута value="..."
+    default_html = html_lib.escape(default_provider_acct, quote=True)
+
+    # 2) безопасно для JS: window.__DEFAULT_PROVIDER_ACCT__ = <JSON string>;
+    #    важно: вставляем БЕЗ кавычек в шаблон, потому что json.dumps уже добавит кавычки
+    default_js = json.dumps(default_provider_acct)
 
     html = r"""
 <!doctype html>
@@ -108,7 +120,7 @@ def admin_ui():
 
     <div style="margin-top:10px;">
       <label>Add members (provider_user_id). One per line / comma / space.</label>
-      <textarea id="membersInput" placeholder="123\\n456\\n789"></textarea>
+      <textarea id="membersInput" placeholder="123\n456\n789"></textarea>
       <div class="row" style="margin-top:10px;">
         <button onclick="addMembers()">Add</button>
       </div>
@@ -127,7 +139,7 @@ def admin_ui():
     <div class="row">
       <div>
         <label>Provider account_id (fallback)</label>
-        <input id="providerAccountId" value="__DEFAULT_PROVIDER_ACCT__" style="width:420px" />
+        <input id="providerAccountId" value="__DEFAULT_PROVIDER_ACCT_HTML__" style="width:420px" />
         <div class="muted">Если выбран аккаунт из DB — используем его account_code.</div>
       </div>
       <div style="min-width:320px;">
@@ -213,13 +225,18 @@ def admin_ui():
   </div>
 
   <script>
-    window.__DEFAULT_PROVIDER_ACCT__ = "__DEFAULT_PROVIDER_ACCT__";
+    window.__DEFAULT_PROVIDER_ACCT__ = __DEFAULT_PROVIDER_ACCT_JSON__;
   </script>
 
- 
   <script type="module" src="/static/admin/admin.js"></script>
 </body>
 </html>
-""".replace("__DEFAULT_PROVIDER_ACCT__", default_provider_acct)
+"""
+
+    html = (
+        html
+        .replace("__DEFAULT_PROVIDER_ACCT_HTML__", default_html)
+        .replace("__DEFAULT_PROVIDER_ACCT_JSON__", default_js)
+    )
 
     return HTMLResponse(html)
