@@ -50,9 +50,9 @@ def admin_ui():
 
     <div class="row">
       <div style="min-width:420px;">
-        <label>Accounts in DB (multi-select)</label>
-        <select id="accountsSelect" multiple size="8" style="width:520px"></select>
-        <div class="muted">Выбери 1+ аккаунтов. Для custom audience отправка только на 1 аккаунт.</div>
+        <label>Accounts in DB (single-select)</label>
+        <select id="accountsSelect" size="8" style="width:520px"></select>
+        <div class="muted">Take 1 account. Выбери 1 аккаунт. Для custom audience sending for 1 users only , отправка только на 1 аккаунт.</div>
       </div>
       <div><button onclick="loadAccounts()">Load Accounts</button></div>
       <div><button onclick="deleteSelectedAccounts()">Delete Selected</button></div>
@@ -91,7 +91,7 @@ def admin_ui():
       <div>
         <label>Internal of_account_id</label>
         <input id="ofAccountId" type="number" value="1" style="width:220px" />
-        <div class="muted">Берём из первого выбранного аккаунта (если выбран).</div>
+        <div class="muted">Take 1 user that switched Берём из первого выбранного аккаунта (если выбран).</div>
       </div>
       <div><button onclick="loadAudiences()">Load Audiences</button></div>
       <div id="audiencesStatus" class="muted"></div>
@@ -139,8 +139,10 @@ def admin_ui():
     <div class="row">
       <div>
         <label>Provider account_id (fallback)</label>
-        <input id="providerAccountId" value="__DEFAULT_PROVIDER_ACCT_HTML__" style="width:420px" />
+        <input id="providerAccountId" value="__DEFAULT_PROVIDER_ACCT_HTML__" style="width:420px" readonly />
+        <div class="muted">Taken from the selected account (account_code).</div>
         <div class="muted">Если выбран аккаунт из DB — используем его account_code.</div>
+        
       </div>
       <div style="min-width:320px;">
         <label>Audience</label>

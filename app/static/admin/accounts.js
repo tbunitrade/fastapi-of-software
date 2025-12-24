@@ -1,12 +1,29 @@
 // frontend/app/static/admin/accounts.js
 import { $, val, setText, apiFetch, getSelectedAccounts } from "./api.js";
 
+export function syncSelectedAccountFields() {
+    const sel = $("accountsSelect");
+    const opt = sel && sel.selectedOptions && sel.selectedOptions[0] ? sel.selectedOptions[0] : null;
+    if (!opt) return;
+
+    const id = parseInt(opt.value, 10);
+    const acct = (opt.dataset.acct || "").trim();
+
+    const ofId = $("ofAccountId");
+    if (ofId) ofId.value = String(id);
+
+    const prov = $("providerAccountId");
+    if (prov) prov.value = acct;
+}
+
 export async function loadAccounts() {
     setText("accountsStatus", "Loading...");
     const data = await apiFetch("/of-accounts");
     const items = data.items || [];
 
     const sel = $("accountsSelect");
+    const prev = sel && sel.value ? String(sel.value) : "";
+
     sel.innerHTML = "";
 
     for (const it of items) {
@@ -14,17 +31,39 @@ export async function loadAccounts() {
         opt.value = String(it.id);
         opt.dataset.acct = it.account_code || "";
         opt.dataset.name = it.name || "";
-        opt.textContent = `${it.id} — ${it.name} (${it.account_code})`;
+        opt.dataset.active = String(!!it.is_active);
+
+        // ✅ to see activity
+        opt.disabled = !it.is_active;
+
+        const activeSuffix = it.is_active ? "" : " (inactive)";
+        opt.textContent = `${it.id} — ${it.name} (${it.account_code})${activeSuffix}`;
+
         sel.appendChild(opt);
     }
 
-    if (sel.options.length && sel.selectedOptions.length === 0) {
-        sel.options[0].selected = true;
+    // ✅ Восстановить предыдущий выбор если он ещё есть,
+    // иначе выбрать первый active, иначе первый
+    if (sel.options.length) {
+        let idx = -1;
+
+        if (prev) {
+            for (let i = 0; i < sel.options.length; i++) {
+                if (String(sel.options[i].value) === prev) { idx = i; break; }
+            }
+        }
+
+        if (idx < 0) {
+            for (let i = 0; i < sel.options.length; i++) {
+                if (sel.options[i].dataset.active === "true") { idx = i; break; }
+            }
+        }
+
+        if (idx < 0) idx = 0;
+        sel.selectedIndex = idx;
     }
 
-    const accs = getSelectedAccounts();
-    if (accs.length) $("ofAccountId").value = accs[0].id;
-
+    syncSelectedAccountFields();
     setText("accountsStatus", "Loaded: " + items.length);
 }
 
@@ -65,49 +104,45 @@ function _buildForceDeleteConfirm(detail) {
 }
 
 export async function deleteSelectedAccounts() {
-    const accs = getSelectedAccounts();
-    if (!accs.length) return alert("No accounts selected");
+    const accs = getSelectedAccounts(); // теперь вернёт 1 выбранный
+    if (!accs.length) return alert("No account selected");
+
+    const a = accs[0];
 
     const msg =
-        "Delete selected accounts?\n\n" +
-        accs.map(a => `${a.id} — ${a.account_code || ""}`).join("\n");
+        "Delete account?\n\n" +
+        `${a.id} — ${a.account_code || ""}`;
 
     if (!confirm(msg)) return;
 
     setText("accountsStatus", "Deleting...");
 
-    let okCount = 0;
-    let errCount = 0;
+    try {
+        await apiFetch("/of-accounts/" + a.id, { method: "DELETE" });
+        await loadAccounts();
+        setText("accountsStatus", "Deleted");
+        return;
+    } catch (e) {
+        const data = e && e.data ? e.data : null;
+        const detail = data && data.detail ? data.detail : null;
 
-    for (const a of accs) {
-        try {
-            await apiFetch("/of-accounts/" + a.id, { method: "DELETE" });
-            okCount++;
-            continue;
-        } catch (e) {
-            const data = e && e.data ? e.data : null;
-            const detail = data && data.detail ? data.detail : null;
+        if (e.status === 409 && detail && detail.will_delete) {
+            const ok = confirm(_buildForceDeleteConfirm(detail));
+            if (!ok) return;
 
-            if (e.status === 409 && detail && detail.will_delete) {
-                const ok = confirm(_buildForceDeleteConfirm(detail));
-                if (!ok) continue;
-
-                try {
-                    await apiFetch("/of-accounts/" + a.id + "?force=true", { method: "DELETE" });
-                    okCount++;
-                    continue;
-                } catch (e2) {
-                    errCount++;
-                    alert("Force delete failed for account_id=" + a.id + "\n\n" + JSON.stringify(e2.data || e2, null, 2));
-                    continue;
-                }
+            try {
+                await apiFetch("/of-accounts/" + a.id + "?force=true", { method: "DELETE" });
+                await loadAccounts();
+                setText("accountsStatus", "Force deleted");
+                return;
+            } catch (e2) {
+                alert("Force delete failed\n\n" + JSON.stringify(e2.data || e2, null, 2));
+                setText("accountsStatus", "Force delete failed");
+                return;
             }
-
-            errCount++;
-            alert("Delete failed for account_id=" + a.id + "\n\n" + JSON.stringify(data || e, null, 2));
         }
-    }
 
-    await loadAccounts();
-    setText("accountsStatus", `Delete done. OK: ${okCount}, ERR: ${errCount}`);
+        alert("Delete failed\n\n" + JSON.stringify(data || e, null, 2));
+        setText("accountsStatus", "Delete failed");
+    }
 }

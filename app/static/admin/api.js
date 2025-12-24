@@ -36,14 +36,15 @@ export function parseIds(text) {
 
 export function getSelectedAccounts() {
     const sel = $("accountsSelect");
-    return Array.from(sel.selectedOptions).map(o => ({
+    const o = sel && sel.selectedOptions && sel.selectedOptions[0] ? sel.selectedOptions[0] : null;
+    if (!o) return [];
+    return [{
         id: parseInt(o.value, 10),
         account_code: o.dataset.acct || "",
         name: o.dataset.name || "",
         label: o.textContent || ""
-    }));
+    }];
 }
-
 export function resolveProviderAccount(selectedAccount) {
     const fromDb = (selectedAccount && selectedAccount.account_code) ? selectedAccount.account_code.trim() : "";
     if (fromDb) return fromDb;

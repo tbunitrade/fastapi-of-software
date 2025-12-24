@@ -1,6 +1,6 @@
 // frontend/app/static/admin/admin.js
 import { showPage } from "./tabs.js";
-import { loadAccounts, createAccount, deleteSelectedAccounts } from "./accounts.js";
+import { loadAccounts, createAccount, deleteSelectedAccounts, syncSelectedAccountFields } from "./accounts.js";
 import { loadAudiences, createList, loadMembers, addMembers, deleteMember } from "./audiences.js";
 import { sendMessage } from "./send.js";
 import { loadQueue, loadQueueItem } from "./queue.js";
@@ -28,17 +28,27 @@ window.loadQueueItem = loadQueueItem;
 window.loadOverview = loadOverview;
 
 window.addEventListener("load", async () => {
-    // заполним fallback providerAccountId
+    // fallback providerAccountId (если вдруг нет аккаунтов в DB)
     const def = (window.__DEFAULT_PROVIDER_ACCT__ || "").trim();
     if (def && $("providerAccountId") && !$("providerAccountId").value) {
         $("providerAccountId").value = def;
     }
 
     showPage("pageAccounts");
+
     try {
         await loadAccounts();
         await loadAudiences();
+
+        const sel = $("accountsSelect");
+        if (sel) {
+            sel.addEventListener("change", async () => {
+                // ✅ НЕ перезагружаем accounts (иначе затираем выбор)
+                syncSelectedAccountFields();
+                try { await loadAudiences(); } catch (_) {}
+            });
+        }
     } catch (e) {
-        // не валим UI если нет данных/авторизации
+        // не валим UI
     }
 });

@@ -79,21 +79,21 @@ def _dependency_counts(session: Session, account_id: int) -> dict:
     }
 
     deps["operator_account_access"] = int(
-        session.exec(
+        session.execute(
             text("select count(*) from operator_account_access where of_account_id = :id"),
             {"id": account_id},
-        ).one()
+        ).scalar_one()
     )
 
     deps["audience_lists"] = int(
-        session.exec(
+        session.execute(
             text("select count(*) from audience_lists where of_account_id = :id"),
             {"id": account_id},
-        ).one()
+        ).scalar_one()
     )
 
     deps["audience_list_members"] = int(
-        session.exec(
+        session.execute(
             text("""
                  select count(*)
                  from audience_list_members m
@@ -101,18 +101,18 @@ def _dependency_counts(session: Session, account_id: int) -> dict:
                  where l.of_account_id = :id
                  """),
             {"id": account_id},
-        ).one()
+        ).scalar_one()
     )
 
     deps["campaigns"] = int(
-        session.exec(
+        session.execute(
             text("select count(*) from campaigns where of_account_id = :id"),
             {"id": account_id},
-        ).one()
+        ).scalar_one()
     )
 
     deps["campaign_runs"] = int(
-        session.exec(
+        session.execute(
             text("""
                  select count(*)
                  from campaign_runs r
@@ -120,7 +120,7 @@ def _dependency_counts(session: Session, account_id: int) -> dict:
                  where c.of_account_id = :id
                  """),
             {"id": account_id},
-        ).one()
+        ).scalar_one()
     )
 
     deps["total"] = sum(v for k, v in deps.items() if k != "total")
@@ -130,26 +130,43 @@ def _dependency_counts(session: Session, account_id: int) -> dict:
 def _force_delete_account(session: Session, account_id: int) -> dict:
     deps_before = _dependency_counts(session, account_id)
 
-    session.exec(
+    # 1) campaign_runs -> campaigns
+    session.execute(
         text("""
              delete from campaign_runs
              where campaign_id in (select id from campaigns where of_account_id = :id)
              """),
         {"id": account_id},
     )
-    session.exec(text("delete from campaigns where of_account_id = :id"), {"id": account_id})
+    session.execute(
+        text("delete from campaigns where of_account_id = :id"),
+        {"id": account_id},
+    )
 
-    session.exec(
+    # 2) audience_list_members -> audience_lists
+    session.execute(
         text("""
              delete from audience_list_members
              where audience_list_id in (select id from audience_lists where of_account_id = :id)
              """),
         {"id": account_id},
     )
-    session.exec(text("delete from audience_lists where of_account_id = :id"), {"id": account_id})
+    session.execute(
+        text("delete from audience_lists where of_account_id = :id"),
+        {"id": account_id},
+    )
 
-    session.exec(text("delete from operator_account_access where of_account_id = :id"), {"id": account_id})
-    session.exec(text("delete from of_accounts where id = :id"), {"id": account_id})
+    # 3) access
+    session.execute(
+        text("delete from operator_account_access where of_account_id = :id"),
+        {"id": account_id},
+    )
+
+    # 4) finally account
+    session.execute(
+        text("delete from of_accounts where id = :id"),
+        {"id": account_id},
+    )
 
     session.commit()
     return {"deleted": deps_before}
