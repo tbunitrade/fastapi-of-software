@@ -5,7 +5,7 @@ function rebuildAudienceSelect(builtin, custom) {
     const sel = $("audienceSelect");
     sel.innerHTML = "";
 
-    for (const b of builtin) {
+    for (const b of (builtin || [])) {
         const opt = document.createElement("option");
         opt.value = "builtin:" + b.key;
         opt.textContent = "Builtin: " + b.label;
@@ -17,7 +17,7 @@ function rebuildAudienceSelect(builtin, custom) {
     optDirect.textContent = "Direct: userIds (manual)";
     sel.appendChild(optDirect);
 
-    for (const c of custom) {
+    for (const c of (custom || [])) {
         const opt = document.createElement("option");
         opt.value = "custom:" + c.id;
         opt.textContent = "Custom: " + c.name + " (" + c.count + ")";
@@ -33,7 +33,7 @@ function rebuildAudienceSelect(builtin, custom) {
 function rebuildCustomLists(custom) {
     const sel = $("customListSelect");
     sel.innerHTML = "";
-    for (const c of custom) {
+    for (const c of (custom || [])) {
         const opt = document.createElement("option");
         opt.value = String(c.id);
         opt.textContent = c.name + " (" + c.count + ")";
@@ -54,7 +54,7 @@ export async function loadAudiences() {
     rebuildAudienceSelect(data.builtin, data.custom);
     rebuildCustomLists(data.custom);
 
-    setText("audiencesStatus", "Loaded. Builtin: " + data.builtin.length + ", custom: " + data.custom.length);
+    setText("audiencesStatus", "Loaded. Builtin: " + (data.builtin?.length || 0) + ", custom: " + (data.custom?.length || 0));
 }
 
 export async function createList() {
@@ -68,6 +68,7 @@ export async function createList() {
         method: "POST",
         body: JSON.stringify({ name })
     });
+
     await loadAudiences();
     setText("membersStatus", "Created");
 }

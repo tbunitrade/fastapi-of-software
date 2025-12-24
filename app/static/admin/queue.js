@@ -1,4 +1,4 @@
-// frontend/app/static/admin/send.js
+// frontend/app/static/admin/queue.js
 import { val, setText, apiFetch, getSelectedAccounts, resolveProviderAccount } from "./api.js";
 
 export async function loadQueue() {
@@ -17,7 +17,7 @@ export async function loadQueue() {
         setText("queueResult", JSON.stringify(data, null, 2));
     } catch (e) {
         setText("queueStatus", "ERROR");
-        setText("queueResult", String(e));
+        setText("queueResult", JSON.stringify(e.data || e, null, 2));
     }
 }
 

@@ -23,9 +23,7 @@ export async function loadAccounts() {
     }
 
     const accs = getSelectedAccounts();
-    if (accs.length) {
-        $("ofAccountId").value = accs[0].id;
-    }
+    if (accs.length) $("ofAccountId").value = accs[0].id;
 
     setText("accountsStatus", "Loaded: " + items.length);
 }
@@ -42,25 +40,74 @@ export async function createAccount() {
         method: "POST",
         body: JSON.stringify({ name, account_code, is_active })
     });
+
     await loadAccounts();
     setText("accountsStatus", "Created");
+}
+
+function _buildForceDeleteConfirm(detail) {
+    const d = detail.will_delete || {};
+    const lines = [
+        `Account: ${detail.account_id} — ${detail.account_code || ""}`,
+        ``,
+        `We will delete related records in OUR DB:`,
+        `- operator_account_access: ${d.operator_account_access ?? 0}`,
+        `- audience_lists: ${d.audience_lists ?? 0}`,
+        `- audience_list_members: ${d.audience_list_members ?? 0}`,
+        `- campaigns: ${d.campaigns ?? 0}`,
+        `- campaign_runs: ${d.campaign_runs ?? 0}`,
+        ``,
+        `TOTAL: ${d.total ?? 0}`,
+        ``,
+        `Proceed with FORCE DELETE (cleanup DB)?`
+    ];
+    return lines.join("\n");
 }
 
 export async function deleteSelectedAccounts() {
     const accs = getSelectedAccounts();
     if (!accs.length) return alert("No accounts selected");
 
+    const msg =
+        "Delete selected accounts?\n\n" +
+        accs.map(a => `${a.id} — ${a.account_code || ""}`).join("\n");
+
+    if (!confirm(msg)) return;
+
+    setText("accountsStatus", "Deleting...");
+
+    let okCount = 0;
+    let errCount = 0;
+
     for (const a of accs) {
         try {
             await apiFetch("/of-accounts/" + a.id, { method: "DELETE" });
+            okCount++;
             continue;
         } catch (e) {
-            // здесь ожидаем, что бэк позже начнёт отдавать detail.will_delete
-            // пока — просто показываем ошибку
-            alert("Delete failed for account_id=" + a.id + "\n\n" + String(e));
+            const data = e && e.data ? e.data : null;
+            const detail = data && data.detail ? data.detail : null;
+
+            if (e.status === 409 && detail && detail.will_delete) {
+                const ok = confirm(_buildForceDeleteConfirm(detail));
+                if (!ok) continue;
+
+                try {
+                    await apiFetch("/of-accounts/" + a.id + "?force=true", { method: "DELETE" });
+                    okCount++;
+                    continue;
+                } catch (e2) {
+                    errCount++;
+                    alert("Force delete failed for account_id=" + a.id + "\n\n" + JSON.stringify(e2.data || e2, null, 2));
+                    continue;
+                }
+            }
+
+            errCount++;
+            alert("Delete failed for account_id=" + a.id + "\n\n" + JSON.stringify(data || e, null, 2));
         }
     }
 
     await loadAccounts();
-    setText("accountsStatus", "Delete finished");
+    setText("accountsStatus", `Delete done. OK: ${okCount}, ERR: ${errCount}`);
 }

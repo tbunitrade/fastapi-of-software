@@ -6,6 +6,7 @@ export async function loadOverview() {
     if (!accs.length) return alert("No accounts selected");
 
     const providerAccountId = resolveProviderAccount(accs[0]);
+
     const start_date = val("ovStart").trim() || null;
     const end_date = val("ovEnd").trim() || null;
     const limit = parseInt(val("ovLimit"), 10) || 10;
@@ -28,6 +29,6 @@ export async function loadOverview() {
         setText("overviewResult", JSON.stringify(data, null, 2));
     } catch (e) {
         setText("overviewStatus", "ERROR");
-        setText("overviewResult", String(e));
+        setText("overviewResult", JSON.stringify(e.data || e, null, 2));
     }
 }

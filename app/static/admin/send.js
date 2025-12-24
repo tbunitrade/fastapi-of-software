@@ -56,6 +56,6 @@ export async function sendMessage() {
         setText("sendResult", JSON.stringify(results, null, 2));
     } catch (e) {
         setText("sendStatus", "ERROR");
-        setText("sendResult", String(e));
+        setText("sendResult", JSON.stringify(e.data || e, null, 2));
     }
 }
