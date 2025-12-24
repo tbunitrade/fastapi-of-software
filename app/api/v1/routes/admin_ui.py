@@ -216,14 +216,8 @@ def admin_ui():
     window.__DEFAULT_PROVIDER_ACCT__ = "__DEFAULT_PROVIDER_ACCT__";
   </script>
 
-  <script src="/static/admin/api.js"></script>
-  <script src="/static/admin/tabs.js"></script>
-  <script src="/static/admin/accounts.js"></script>
-  <script src="/static/admin/audiences.js"></script>
-  <script src="/static/admin/send.js"></script>
-  <script src="/static/admin/queue.js"></script>
-  <script src="/static/admin/overview.js"></script>
-  <script src="/static/admin/admin.js"></script>
+ 
+  <script type="module" src="/static/admin/admin.js"></script>
 </body>
 </html>
 """.replace("__DEFAULT_PROVIDER_ACCT__", default_provider_acct)

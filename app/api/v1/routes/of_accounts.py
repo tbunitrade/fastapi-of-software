@@ -48,8 +48,8 @@ def create_account(
     acc = OFAccount(
         name=body.name.strip(),
         account_code=body.account_code.strip(),
-        api_key_encrypted=encrypt_api_key(body.api_key),  # <-- NEW
         is_active=body.is_active,
+        api_key_encrypted=None,  # можно вообще не передавать
     )
     session.add(acc)
     try:
