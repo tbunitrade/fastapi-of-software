@@ -14,7 +14,9 @@ router = APIRouter()
 
 @router.get("/admin", response_class=HTMLResponse)
 def admin_ui():
-    default_provider_acct = (settings.PROVIDER_CLIENT_ID or "").strip()
+    #default_provider_acct = (settings.PROVIDER_CLIENT_ID or "").strip()
+    #default_provider_acct = (settings.PROVIDER_ACCOUNT_CODE_FALLBACK or "").strip()
+    default_provider_acct = ""
 
     # 1) безопасно для HTML-атрибута value="..."
     default_html = html_lib.escape(default_provider_acct, quote=True)
