@@ -14,7 +14,8 @@ td, th { border-bottom: 1px solid #eee; padding:6px; text-align:left; }
 .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 12px; }
 .tabbtn { background:#f7f7f7; }
 .tabbtn.active { background:#eaeaea; border-color:#999; }
+
 .page { display:none; }
 .page.active { display:block; }
 
-.hr { border:none; border-top:1px solid #eee; margin:14px 0; }
+.sep { border:none; border-top:1px solid #eee; margin:14px 0; }
